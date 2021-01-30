@@ -344,7 +344,7 @@ func (r *Request) Upload(url, filename, fileinput string) (*Response, error) {
 }
 
 func urlJoin(url, host string) string {
-	if strings.TrimSpace(host) == "" {
+	if strings.TrimSpace(host) == "" || strings.HasPrefix(url, "http") {
 		return url
 	}
 	host = strings.TrimRight(host, "/")
