@@ -356,7 +356,8 @@ func urlJoin(url, host string) string {
 func (r *Request) Send(method, url string, data ...interface{}) (*Response, error) {
 	// Build Response
 	response := &Response{}
-
+	// host+url
+	url = urlJoin(url, r.host)
 	// Start time
 	start := time.Now().UnixNano() / 1e6
 	// Count elapsed time
@@ -369,7 +370,7 @@ func (r *Request) Send(method, url string, data ...interface{}) (*Response, erro
 	// Debug infomation
 	defer r.log()
 
-	r.url = urlJoin(url, r.host)
+	r.url = url
 	if len(data) > 0 {
 		r.data = data[0]
 	} else {
