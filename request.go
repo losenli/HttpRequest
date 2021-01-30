@@ -20,6 +20,7 @@ type Request struct {
 	cli               *http.Client
 	transport         *http.Transport
 	debug             bool
+	host              string
 	url               string
 	method            string
 	time              int64
@@ -108,9 +109,16 @@ func (r *Request) buildClient() *http.Client {
 	return r.cli
 }
 
+func (r *Request) SetHost(host string) *Request {
+	if strings.TrimSpace(host) != "" {
+		r.host = host
+	}
+	return r
+}
+
 // Set headers
 func (r *Request) SetHeaders(headers map[string]string) *Request {
-	if headers != nil || len(headers) > 0 {
+	if headers != nil && len(headers) > 0 {
 		for k, v := range headers {
 			r.headers[k] = v
 		}
@@ -128,7 +136,7 @@ func (r *Request) initHeaders(req *http.Request) {
 
 // Set cookies
 func (r *Request) SetCookies(cookies map[string]string) *Request {
-	if cookies != nil || len(cookies) > 0 {
+	if cookies != nil && len(cookies) > 0 {
 		for k, v := range cookies {
 			r.cookies[k] = v
 		}
@@ -174,6 +182,10 @@ func (r *Request) isJson() bool {
 func (r *Request) JSON() *Request {
 	r.SetHeaders(map[string]string{"Content-Type": "application/json"})
 	return r
+}
+
+func (r *Request) PostJSON(url string, data ...interface{}) (*Response, error) {
+	return r.JSON().Send(http.MethodPost, url, data...)
 }
 
 // Build query data
@@ -308,22 +320,22 @@ func (r *Request) log() {
 
 // Get is a get http request
 func (r *Request) Get(url string, data ...interface{}) (*Response, error) {
-	return r.request(http.MethodGet, url, data...)
+	return r.Send(http.MethodGet, url, data...)
 }
 
 // Post is a post http request
 func (r *Request) Post(url string, data ...interface{}) (*Response, error) {
-	return r.request(http.MethodPost, url, data...)
+	return r.Send(http.MethodPost, url, data...)
 }
 
 // Put is a put http request
 func (r *Request) Put(url string, data ...interface{}) (*Response, error) {
-	return r.request(http.MethodPut, url, data...)
+	return r.Send(http.MethodPut, url, data...)
 }
 
 // Delete is a delete http request
 func (r *Request) Delete(url string, data ...interface{}) (*Response, error) {
-	return r.request(http.MethodDelete, url, data...)
+	return r.Send(http.MethodDelete, url, data...)
 }
 
 // Upload file
@@ -331,8 +343,17 @@ func (r *Request) Upload(url, filename, fileinput string) (*Response, error) {
 	return r.sendFile(url, filename, fileinput)
 }
 
+func urlJoin(url, host string) string {
+	if strings.TrimSpace(host) == "" {
+		return url
+	}
+	host = strings.TrimRight(host, "/")
+	url = strings.TrimLeft(url, "/")
+	return fmt.Sprintf("%s/%s", host, url)
+}
+
 // Send http request
-func (r *Request) request(method, url string, data ...interface{}) (*Response, error) {
+func (r *Request) Send(method, url string, data ...interface{}) (*Response, error) {
 	// Build Response
 	response := &Response{}
 
@@ -348,7 +369,7 @@ func (r *Request) request(method, url string, data ...interface{}) (*Response, e
 	// Debug infomation
 	defer r.log()
 
-	r.url = url
+	r.url = urlJoin(url, r.host)
 	if len(data) > 0 {
 		r.data = data[0]
 	} else {
@@ -423,7 +444,7 @@ func (r *Request) sendFile(url, filename, fileinput string) (*Response, error) {
 	}
 
 	contentType := bodyWriter.FormDataContentType()
-	bodyWriter.Close()
+	_ = bodyWriter.Close()
 
 	// Build Response
 	response := &Response{}

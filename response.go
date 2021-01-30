@@ -3,7 +3,7 @@ package HttpRequest
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"net/http"
 )
@@ -16,7 +16,7 @@ type Response struct {
 }
 
 func (r *Response) Response() *http.Response {
-	if r!=nil{
+	if r != nil {
 		return r.resp
 	}
 	return nil
@@ -29,11 +29,19 @@ func (r *Response) StatusCode() int {
 	return r.resp.StatusCode
 }
 
-func (r *Response) Time() string {
+func (r *Response) Time() int64 {
 	if r != nil {
-		return fmt.Sprintf("%dms", r.time)
+		return r.time
 	}
-	return "0ms"
+	return r.time
+}
+
+func (r *Response) ContentLength() int64 {
+	b, err := r.Body()
+	if err != nil {
+		return 0
+	}
+	return int64(len(b))
 }
 
 func (r *Response) Url() string {
@@ -89,6 +97,14 @@ func (r *Response) Content() (string, error) {
 	return string(b), nil
 }
 
+func (r *Response) Text() string {
+	b, err := r.Body()
+	if err != nil {
+		return err.Error()
+	}
+	return string(b)
+}
+
 func (r *Response) Json(v interface{}) error {
 	return r.Unmarshal(v)
 }
@@ -125,4 +141,13 @@ func (r *Response) Export() (string, error) {
 	}
 
 	return Export(i), nil
+}
+
+// 转换成gjson.Result,方便解析JSON响应
+func (r *Response) Result() gjson.Result {
+	text, err := r.Content()
+	if err != nil {
+		text = "{}"
+	}
+	return gjson.Parse(text)
 }
