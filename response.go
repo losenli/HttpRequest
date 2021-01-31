@@ -11,22 +11,23 @@ import (
 type Response struct {
 	time int64
 	url  string
-	resp *http.Response
+	R    *http.Response
 	body []byte
+	Req  *http.Request
 }
 
 func (r *Response) Response() *http.Response {
 	if r != nil {
-		return r.resp
+		return r.R
 	}
 	return nil
 }
 
 func (r *Response) StatusCode() int {
-	if r.resp == nil {
+	if r.R == nil {
 		return 0
 	}
-	return r.resp.StatusCode
+	return r.R.StatusCode
 }
 
 func (r *Response) Time() int64 {
@@ -53,14 +54,14 @@ func (r *Response) Url() string {
 
 func (r *Response) Headers() http.Header {
 	if r != nil {
-		return r.resp.Header
+		return r.R.Header
 	}
 	return nil
 }
 
 func (r *Response) Cookies() []*http.Cookie {
 	if r != nil {
-		return r.resp.Cookies()
+		return r.R.Cookies()
 	}
 	return []*http.Cookie{}
 }
@@ -70,17 +71,17 @@ func (r *Response) Body() ([]byte, error) {
 		return []byte{}, errors.New("HttpRequest.Response is nil.")
 	}
 
-	defer r.resp.Body.Close()
+	defer r.R.Body.Close()
 
 	if len(r.body) > 0 {
 		return r.body, nil
 	}
 
-	if r.resp == nil || r.resp.Body == nil {
+	if r.R == nil || r.R.Body == nil {
 		return nil, errors.New("response or body is nil")
 	}
 
-	b, err := ioutil.ReadAll(r.resp.Body)
+	b, err := ioutil.ReadAll(r.R.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,7 @@ func (r *Response) Unmarshal(v interface{}) error {
 
 func (r *Response) Close() error {
 	if r != nil {
-		return r.resp.Body.Close()
+		return r.R.Body.Close()
 	}
 	return nil
 }

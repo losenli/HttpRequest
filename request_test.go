@@ -3,7 +3,9 @@ package HttpRequest
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"testing"
+	"time"
 )
 
 const localUrl = "http://localhost:8000"
@@ -71,4 +73,32 @@ func TestPostRequest(t *testing.T) {
 		t.Error("GET "+localUrl, "expected code 200", fmt.Sprintf("return code %d", resp.StatusCode()))
 	}
 
+}
+
+func TestRequest_SetAuthHeader(t *testing.T) {
+	req := NewRequest()
+	req.SetHost("http://121.196.173.33")
+	req.SetAuthHeader("667b8ce0-c212-487f-8128-575ad91f9393")
+	resp, err := req.Get("/upmsx/app/user/info")
+	if err != nil {
+		t.Error(err)
+	}
+	log.Println(resp.Req.Header.Get("Authorization"))
+	log.Println(resp.Result())
+	resp.Time()
+}
+
+func TestRequest_SetTimeout(t *testing.T) {
+	resp, err := NewRequest().
+		SetTimeout(15 * time.Second).
+		SetHost("http://121.196.173.33").
+		SetAuthHeader("667b8ce0-c212-487f-8128-575ad91f9393").
+		Get("/upmsx/app/user/info")
+
+	if err != nil {
+		t.Error(err)
+	}
+	log.Println(resp.Req.Header.Get("Authorization"))
+	log.Println(resp.Result())
+	resp.Time()
 }

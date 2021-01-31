@@ -16,29 +16,36 @@ import (
 	"time"
 )
 
+type (
+	Fields  map[string]interface{}
+	Headers map[string]string
+	Cookies map[string]string
+	Data    interface{}
+)
+
 type Request struct {
-	cli               *http.Client
-	transport         *http.Transport
-	debug             bool
-	host              string
-	url               string
-	method            string
-	time              int64
-	timeout           time.Duration
-	headers           map[string]string
-	cookies           map[string]string
-	username          string
-	password          string
-	data              interface{}
-	disableKeepAlives bool
-	tlsClientConfig   *tls.Config
-	jar               http.CookieJar
-	proxy             func(*http.Request) (*url.URL, error)
-	checkRedirect     func(req *http.Request, via []*http.Request) error
+	cli              *http.Client
+	transport        *http.Transport
+	debug            bool
+	host             string
+	url              string
+	method           string
+	time             int64
+	timeout          time.Duration
+	headers          Headers
+	cookies          Cookies
+	username         string
+	password         string
+	data             Data
+	disableKeepAlive bool
+	tlsClientConfig  *tls.Config
+	jar              http.CookieJar
+	proxy            func(*http.Request) (*url.URL, error)
+	checkRedirect    func(req *http.Request, via []*http.Request) error
 }
 
-func (r *Request) DisableKeepAlives(v bool) *Request {
-	r.disableKeepAlives = v
+func (r *Request) DisableKeepAlive(v bool) *Request {
+	r.disableKeepAlive = v
 	return r
 }
 
@@ -83,7 +90,7 @@ func (r *Request) getTransport() http.RoundTripper {
 		return http.DefaultTransport
 	}
 
-	r.transport.DisableKeepAlives = r.disableKeepAlives
+	r.transport.DisableKeepAlives = r.disableKeepAlive
 
 	if r.tlsClientConfig != nil {
 		r.transport.TLSClientConfig = r.tlsClientConfig
@@ -109,6 +116,7 @@ func (r *Request) buildClient() *http.Client {
 	return r.cli
 }
 
+// 设置 Host
 func (r *Request) SetHost(host string) *Request {
 	if strings.TrimSpace(host) != "" {
 		r.host = host
@@ -116,12 +124,20 @@ func (r *Request) SetHost(host string) *Request {
 	return r
 }
 
-// Set headers
+// 设置请求头
 func (r *Request) SetHeaders(headers map[string]string) *Request {
 	if headers != nil && len(headers) > 0 {
 		for k, v := range headers {
 			r.headers[k] = v
 		}
+	}
+	return r
+}
+
+// 设置 Authorization 的 Token
+func (r *Request) SetAuthHeader(token string) *Request {
+	if strings.TrimSpace(token) != "" {
+		r.headers["Authorization"] = token
 	}
 	return r
 }
@@ -415,7 +431,8 @@ func (r *Request) Send(method, url string, data ...interface{}) (*Response, erro
 	}
 
 	response.url = url
-	response.resp = resp
+	response.R = resp
+	response.Req = req
 
 	return response, nil
 }
@@ -484,7 +501,7 @@ func (r *Request) sendFile(url, filename, fileinput string) (*Response, error) {
 	}
 
 	response.url = url
-	response.resp = resp
+	response.R = resp
 
 	return response, nil
 }

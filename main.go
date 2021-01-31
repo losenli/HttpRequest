@@ -29,9 +29,9 @@ func Jar(v http.CookieJar) *Request {
 	return r.Jar(v)
 }
 
-func DisableKeepAlives(v bool) *Request {
+func DisableKeepAlive(v bool) *Request {
 	r := NewRequest()
-	return r.DisableKeepAlives(v)
+	return r.DisableKeepAlive(v)
 }
 
 func CheckRedirect(v func(req *http.Request, via []*http.Request) error) *Request {
