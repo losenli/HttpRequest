@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -235,7 +236,7 @@ func (r *Request) buildBody(d ...interface{}) (io.Reader, error) {
 
 	t := reflect.TypeOf(d[0]).String()
 	if !strings.Contains(t, "map[string]interface") {
-		return nil, errors.New("Unsupported data type.")
+		return nil, errors.New("Unsupported  type.")
 	}
 
 	data := make([]string, 0)
@@ -306,7 +307,7 @@ func buildUrl(url string, data ...interface{}) (string, error) {
 				query = append(query, param)
 			}
 		default:
-			return url, errors.New("Unsupported data type.")
+			return url, errors.New("Unsupported  type.")
 		}
 
 	}
@@ -325,12 +326,13 @@ func (r *Request) elapsedTime(n int64, resp *Response) {
 	resp.time = end - n
 }
 
-func (r *Request) log() {
+// 优化Debug模式下的日志
+func (r *Request) log(resp *Response) {
 	if r.debug {
-		fmt.Printf("[HttpRequest]\n")
+		log.Printf("HttpRequest Debug Model\n")
 		fmt.Printf("-------------------------------------------------------------------\n")
-		fmt.Printf("Request: %s %s\nHeaders: %v\nCookies: %v\nTimeout: %ds\nReqBody: %v\n\n", r.method, r.url, r.headers, r.cookies, r.timeout, r.data)
-		//fmt.Printf("-------------------------------------------------------------------\n\n")
+		fmt.Printf("Request: %s %s\nHeaders: %v\nCookies: %v\nTimeout: %ds\nReqBody: %v\nResp: %v\n\n",
+			r.method, r.url, r.headers, r.cookies, r.timeout, r.data, resp.Result())
 	}
 }
 
@@ -355,8 +357,8 @@ func (r *Request) Delete(url string, data ...interface{}) (*Response, error) {
 }
 
 // Upload file
-func (r *Request) Upload(url, filename, fileinput string) (*Response, error) {
-	return r.sendFile(url, filename, fileinput)
+func (r *Request) Upload(url, filename, fileInput string) (*Response, error) {
+	return r.sendFile(url, filename, fileInput)
 }
 
 func urlJoin(url, host string) string {
@@ -383,8 +385,7 @@ func (r *Request) Send(method, url string, data ...interface{}) (*Response, erro
 		return nil, errors.New("parameter method and url is required")
 	}
 
-	// Debug infomation
-	defer r.log()
+	defer r.log(response)
 
 	r.url = url
 	if len(data) > 0 {
@@ -438,14 +439,14 @@ func (r *Request) Send(method, url string, data ...interface{}) (*Response, erro
 }
 
 // Send file
-func (r *Request) sendFile(url, filename, fileinput string) (*Response, error) {
+func (r *Request) sendFile(url, filename, fileInput string) (*Response, error) {
 	if url == "" {
 		return nil, errors.New("parameter url is required")
 	}
 
 	fileBuffer := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(fileBuffer)
-	fileWriter, er := bodyWriter.CreateFormFile(fileinput, filename)
+	fileWriter, er := bodyWriter.CreateFormFile(fileInput, filename)
 	if er != nil {
 		return nil, er
 	}
@@ -472,8 +473,7 @@ func (r *Request) sendFile(url, filename, fileinput string) (*Response, error) {
 	// Count elapsed time
 	defer r.elapsedTime(start, response)
 
-	// Debug infomation
-	defer r.log()
+	defer r.log(response)
 
 	r.url = url
 	r.data = nil

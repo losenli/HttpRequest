@@ -89,7 +89,7 @@ func TestRequest_SetAuthHeader(t *testing.T) {
 }
 
 func TestRequest_SetTimeout(t *testing.T) {
-	resp, err := NewRequest().
+	resp, err := NewRequest().Debug(true).
 		SetTimeout(15 * time.Second).
 		SetHost("http://121.196.173.33").
 		SetAuthHeader("667b8ce0-c212-487f-8128-575ad91f9393").
@@ -101,4 +101,5 @@ func TestRequest_SetTimeout(t *testing.T) {
 	log.Println(resp.Req.Header.Get("Authorization"))
 	log.Println(resp.Result())
 	resp.Time()
+	_ = resp.Close()
 }
